@@ -7,7 +7,6 @@ const subjectSchema = mongoose.Schema({
     },
     chapters: {
         type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }],
-        required: true  
     }
 });
 

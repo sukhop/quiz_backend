@@ -7,7 +7,6 @@ const chapterSchema = mongoose.Schema({
     },
     mcqs: {
         type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MCQ' }],
-        required: true
     }
 });
 

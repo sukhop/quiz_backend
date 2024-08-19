@@ -1,6 +1,6 @@
 const express = require('express');
 const pageModel = require('../models/page.model');
-const subjectsModel = require('../Models/subject.model');
+const subjectsModel = require('../models/subject.model');
 const router = express.Router();
 
 router.get('/:id/get-subjects', async (req, res) => {

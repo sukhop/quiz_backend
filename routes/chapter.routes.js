@@ -1,7 +1,7 @@
 const express = require('express');
 const pageModel = require('../models/page.model');
-const chapterModel = require('../Models/chapter.model');
-const subjectsModel = require('../Models/subject.model');
+const chapterModel = require('../models/chapter.model');
+const subjectsModel = require('../models/subject.model');
 const router = express.Router();
 
 router.get('/:id/get-chapters', async (req, res) => {

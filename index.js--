@@ -11,7 +11,7 @@ const pageModel = require('./models/page.model');
 const userModel = require('./models/user.model');
 
 const { authMiddleware } = require('./middleware/auth.middleware');
-const subjectsModel = require('./Models/subject.model');
+const subjectsModel = require('./models/subject.model');
 const app = express();
 app.use(cors())
 app.use(express.json());

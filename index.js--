@@ -5,12 +5,13 @@ const cors = require('cors');
 
 require('dotenv').config()
 
-const connect = require('./DB/db');
+const connect = require('./config/db');
 
-const pageModel = require('./Models/page.model');
-const userModel = require('./Models/user.model');
+const pageModel = require('./models/page.model');
+const userModel = require('./models/user.model');
 
-const { authMiddleware } = require('./Middleware/auth.middleware');
+const { authMiddleware } = require('./middleware/auth.middleware');
+const subjectsModel = require('./Models/subject.model');
 const app = express();
 app.use(cors())
 app.use(express.json());
@@ -33,7 +34,7 @@ app.get('/', authMiddleware, async (req, res) => {
 
 app.get('/get-users', async (req, res) => {
     const user = await userModel.find();
-    res.json({ user});
+    res.json({ user });
 })
 
 /*************** Exam APIs *****************/
@@ -48,34 +49,84 @@ app.post('/create-exam', authMiddleware, async (req, res) => {
 
 app.get('/get-exams', authMiddleware, async (req, res) => {
     const exams = await pageModel.find({});
-    res.json({exams});
+    res.json({ exams });
 })
 
 app.delete('/delete-exam/:id', authMiddleware, async (req, res) => {
-    const {id} = req.params;
-    
-    const exams = await pageModel.findOne({_id: id});
-    await pageModel.findOneAndDelete({_id: id})
-    res.json({msg: "Exam deleted", exams});
+    const { id } = req.params;
+
+    const exams = await pageModel.findOne({ _id: id });
+    await pageModel.findOneAndDelete({ _id: id })
+    res.json({ msg: "Exam deleted", exams });
 })
 /*************** Exam APIs ends *****************/
 
 /*************** Subject APIs *****************/
-// app.patch('/:id/add-subjects', authMiddleware, async(req, res) => {
-//     const {id} = req.params;
-    
-// })
+app.patch('/:id/add-subjects', authMiddleware, async (req, res) => {
+    const { id } = req.params;
+    const subjects = req.body;
+
+    try {
+        const subjectPromise = subjects.map(async (subject) => {
+            const exist = await subjectsModel.findOne({ subjectName: subject.subjectName });
+
+            if (exist) {
+                return exist._id;
+            } else {
+                const newSub = new subjectsModel(subject);
+                await newSub.save();
+                // res.json({ newSub });
+                return newSub;
+            }
+        })
+
+        const subjectIDs = await Promise.all(subjectPromise);
+
+        const updateSubject = await pageModel.findOneAndUpdate(
+            { _id: id },
+            {
+                $addToSet: {
+                    subjects: { $each: subjectIDs }
+                }
+            },
+            { new: true }
+        );
+
+        res.json(updateSubject);
+
+    } catch (error) {
+        console.error('Error updating subjects', error)
+        res.json({ msg: 'Error updating subjects', err: err })
+    }
+})
+
+app.get('/:id/get-subjects', authMiddleware, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const exam = await pageModel.findOne({ _id: id }).populate('subjects');
+
+        if (!exam) {
+            return res.status(404).json({ msg: 'Exam not found' });
+        }
+
+        res.json({ subjects: exam.subjects });
+    } catch (error) {
+        console.error('Error fetching subjects:', error);
+        res.status(500).json({ error: 'Error fetching subjects', details: error });
+    }
+});
 /*************** Subject APIs ends *****************/
 
 /*************** Auth APIs *****************/
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
-    
+
     const user = await userModel.findOne({ email });
     if (!user) {
         return res.json({ msg: "User does not exist" });
     }
-    
+
     try {
         bcrypt.compare(password, user.password, async (err, result) => {
             if (err) {
@@ -101,7 +152,7 @@ app.post('/register', async (req, res) => {
     if (existUser) {
         return res.json({ err: "Email already exist.", existUser })
     }
-    
+
     try {
         bcrypt.hash(password, 10, async (err, hash) => {
             if (err) {
